@@ -16,14 +16,14 @@ def predict_image(image):
         for box in result.boxes:
             # Get confidence and continue only if greater than threshold
             conf = round(box.conf[0].item(), 2)
-            if conf > 0.6:
+            if conf > 0.5:
                 # Get bounding box coordinates
                 cords = box.xyxy[0].tolist()
                 cords = [round(x) for x in cords]
 
                 # Get class and update label with confidence percentage
                 class_id = result.names[box.cls[0].item()]
-                label = f"{class_id}: {conf * 100}%"
+                label = f"{class_id}: {round(conf * 100)}%"
 
                 # Calculate text width and height for label background
                 (text_width, text_height), _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, font_scale, 2)
