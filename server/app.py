@@ -11,8 +11,8 @@ from object_detection.handler import predict_image
 app = Flask(__name__)
 socketio = SocketIO(app)
 
-frame_queue = Queue(maxsize=24)
-processed_frame_queue = Queue(maxsize=24)  # holds up to 10 frames to avoid memory issues
+frame_queue = Queue(maxsize=1)
+processed_frame_queue = Queue(maxsize=1)  # holds up to 10 frames to avoid memory issues
 
 fps = 0
 frame_count = 0

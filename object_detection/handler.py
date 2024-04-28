@@ -4,7 +4,7 @@ import time
 from ultralytics import YOLO
 
 logging.getLogger('ultralytics').setLevel(logging.WARNING)
-model = YOLO("models/yolo/yolov8m.pt")
+model = YOLO("models/yolo/yolov8n.pt")
 
 def predict_image(image):
     img = image
