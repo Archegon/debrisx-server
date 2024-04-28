@@ -11,12 +11,13 @@ from object_detection.handler import predict_image
 app = Flask(__name__)
 socketio = SocketIO(app)
 
-frame_queue = Queue(maxsize=1)
-processed_frame_queue = Queue(maxsize=10)  # holds up to 10 frames to avoid memory issues
+frame_queue = Queue(maxsize=24)
+processed_frame_queue = Queue(maxsize=24)  # holds up to 10 frames to avoid memory issues
 
 fps = 0
 frame_count = 0
 start_time = time.time()
+current_frame = None
 
 def generate_frames():
     global fps
@@ -66,6 +67,9 @@ def frame_processor():
                 frame_count = 0
                 start_time = current_time
 
+w_start_time = time.time()
+receive_count = 0
+
 class DebrisxNamespace(Namespace):
     def on_connect(self):
         print("Client connected")
@@ -74,6 +78,15 @@ class DebrisxNamespace(Namespace):
         print("Client disconnected")
 
     def on_send_frame(self, data):
+        global receive_count, w_start_time
+
+        receive_count += 1
+
+        if time.time() - w_start_time >= 1:
+            print(f"Receiving Rate: {receive_count} per s")
+            w_start_time = time.time()
+            receive_count = 0
+            
         try:
             frame_queue.put(data['frame'], timeout=1)
         except Full:
