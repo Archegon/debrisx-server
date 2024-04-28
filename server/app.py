@@ -31,7 +31,7 @@ def generate_frames():
             yield (b'--frame\r\n'
                    b'Content-Type: image/jpeg\r\n\r\n' + buffer.tobytes() + b'\r\n')
         else:
-            time.sleep(0.016)  # Wait if no frames are available
+            time.sleep(0.0167)  # Wait if no frames are available
 
 def frame_processor():
     global frame_count, fps, start_time
