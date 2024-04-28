@@ -13,7 +13,8 @@ def predict_image(image):
     results = model.predict(img, conf=0.5)
 
     elapsed_time = time.time() - start_time  # Time taken for inference
-    inference_ms = round(elapsed_time * 1000, 1)  # Convert to milliseconds
+    inference_ms = round(elapsed_time * 1000)  # Convert to milliseconds
+    max_fps = round(1 / elapsed_time)
 
     font_scale = 0.7
     font = cv2.FONT_HERSHEY_SIMPLEX
@@ -50,6 +51,7 @@ def predict_image(image):
 
     # Draw inference time and FPS on the extended image space
     cv2.putText(extended_img, f'Inference: {inference_ms} ms', (10, 20), font, font_scale, (255, 255, 0), 2)
+    cv2.putText(extended_img, f'MAX FPS: {max_fps}', (250, 20), font, font_scale, (255, 255, 0), 2)
     return extended_img
 
 if __name__ == "__main__":

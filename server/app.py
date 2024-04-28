@@ -25,7 +25,7 @@ def generate_frames():
             frame = processed_frame_queue.get()
 
             # Apply the FPS text to the frame
-            cv2.putText(frame, f'FPS: {fps}', (325, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 0), 2)
+            cv2.putText(frame, f'FPS: {fps}', (475, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 0), 2)
             _, buffer = cv2.imencode('.jpg', frame)  # Encode frame as JPEG
 
             yield (b'--frame\r\n'
