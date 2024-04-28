@@ -1,5 +1,6 @@
 import cv2
 import logging
+import time
 from ultralytics import YOLO
 
 logging.getLogger('ultralytics').setLevel(logging.WARNING)
@@ -7,33 +8,55 @@ model = YOLO("models/yolo/yolov8n.pt")
 
 def predict_image(image):
     img = image
-    results = model.predict(img)
+    start_time = time.time()
+
+    results = model.predict(img, conf=0.5)
+
+    elapsed_time = time.time() - start_time  # Time taken for inference
+    inference_ms = round(elapsed_time * 1000, 1)  # Convert to milliseconds
 
     font_scale = 0.7
+    font = cv2.FONT_HERSHEY_SIMPLEX
+
+    # Adding extra black space above the image
+    # Define the height of the black space
+    text_space_height = 40
+    extended_img = cv2.copyMakeBorder(img, text_space_height, 0, 0, 0, cv2.BORDER_CONSTANT, value=[0, 0, 0])
 
     # Iterate over detections
     for result in results:
         for box in result.boxes:
-            # Get confidence and continue only if greater than threshold
             conf = round(box.conf[0].item(), 2)
-            if conf > 0.5:
-                # Get bounding box coordinates
-                cords = box.xyxy[0].tolist()
-                cords = [round(x) for x in cords]
+            
+            # Adjust coordinates for the offset
+            cords = box.xyxy[0].tolist()
+            cords = [round(x) if i % 2 == 0 else round(x) + text_space_height for i, x in enumerate(cords)]
 
-                # Get class and update label with confidence percentage
-                class_id = result.names[box.cls[0].item()]
-                label = f"{class_id}: {round(conf * 100)}%"
+            # Get class and update label with confidence percentage
+            class_id = result.names[box.cls[0].item()]
+            label = f"{class_id}: {round(conf * 100)}%"
 
-                # Calculate text width and height for label background
-                (text_width, text_height), _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, font_scale, 2)
+            # Calculate text width and height for label background
+            (text_width, text_height), _ = cv2.getTextSize(label, font, font_scale, 2)
 
-                # Set up the background rectangle for better readability
-                background_tl = (cords[0], cords[1] - text_height - 10)
-                background_br = (cords[0] + text_width, cords[1])
-                cv2.rectangle(img, background_tl, background_br, (255, 255, 255), -1)  # White background
+            # Set up the background rectangle for better readability
+            background_tl = (cords[0], cords[1] - text_height - 10)
+            background_br = (cords[0] + text_width, cords[1])
+            cv2.rectangle(extended_img, background_tl, background_br, (255, 255, 255), -1)  # White background
 
-                # Draw rectangle and label on the image
-                cv2.rectangle(img, (cords[0], cords[1]), (cords[2], cords[3]), (255, 0, 0), 2)
-                cv2.putText(img, label, (cords[0], cords[1]-10), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (255, 0, 0), 2)
-    return img
+            # Draw rectangle and label on the image
+            cv2.rectangle(extended_img, (cords[0], cords[1]), (cords[2], cords[3]), (255, 0, 0), 2)
+            cv2.putText(extended_img, label, (cords[0], cords[1]-10), font, font_scale, (255, 0, 0), 2)
+
+    # Draw inference time and FPS on the extended image space
+    cv2.putText(extended_img, f'Inference: {inference_ms} ms', (10, 20), font, font_scale, (255, 255, 0), 2)
+    return extended_img
+
+if __name__ == "__main__":
+    logging.getLogger('ultralytics').setLevel(logging.INFO)
+    test_img_path = "test.jpeg"
+    img = cv2.imread(test_img_path)
+    result = predict_image(img)
+    cv2.imshow("Processed", result)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
