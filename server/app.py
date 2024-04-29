@@ -3,7 +3,7 @@ import time
 import base64
 import numpy as np
 from flask import Flask, Response
-from flask_socketio import SocketIO, Namespace
+from flask_socketio import SocketIO, Namespace, emit
 from threading import Thread
 from queue import Queue, Full
 from object_detection.handler import predict_image
@@ -12,12 +12,11 @@ app = Flask(__name__)
 socketio = SocketIO(app)
 
 frame_queue = Queue(maxsize=1)
-processed_frame_queue = Queue(maxsize=1)  # holds up to 10 frames to avoid memory issues
+processed_frame_queue = Queue(maxsize=5)  # holds up to 10 frames to avoid memory issues
 
 fps = 0
 frame_count = 0
 start_time = time.time()
-current_frame = None
 
 def generate_frames():
     global fps
@@ -67,9 +66,6 @@ def frame_processor():
                 frame_count = 0
                 start_time = current_time
 
-w_start_time = time.time()
-receive_count = 0
-
 class DebrisxNamespace(Namespace):
     def on_connect(self):
         print("Client connected")
@@ -77,20 +73,34 @@ class DebrisxNamespace(Namespace):
     def on_disconnect(self):
         print("Client disconnected")
 
+    def on_start_latency_test(self, data):
+        self.emit_latency_test()
+
     def on_send_frame(self, data):
-        global receive_count, w_start_time
+        payload = {
+            "client_sendtime" : data['client_sendtime'],
+        }
 
-        receive_count += 1
-
-        if time.time() - w_start_time >= 1:
-            print(f"Receiving Rate: {receive_count} per s")
-            w_start_time = time.time()
-            receive_count = 0
-            
         try:
+            emit('frame_latency', payload, namespace='/debrisx')
             frame_queue.put(data['frame'], timeout=1)
         except Full:
             pass
+
+    def emit_latency_test(self):
+        # Send current time to the client and request immediate response
+        start_time = time.time()
+        emit('test_latency', {'server_time': start_time}, namespace='/debrisx')
+
+    def on_latency_response(self, data):
+        # Receive the latency response from the client with its timestamp
+        end_time = time.time()
+        server_time = data['server_time']
+
+        # Calculate the round trip latency
+        rtt = (end_time - server_time) * 1000
+
+        print(f"Round-trip time: {rtt:.2f} ms")
 
 @app.route('/video_feed')
 def video_feed():
