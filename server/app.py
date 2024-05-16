@@ -5,24 +5,25 @@ import numpy as np
 from flask import Flask, Response
 from flask_socketio import SocketIO, Namespace, emit
 from threading import Thread
-from queue import Queue, Full
 from object_detection.handler import predict_image
 
 app = Flask(__name__)
 socketio = SocketIO(app)
 
-frame_queue = Queue(maxsize=1)
-processed_frame_queue = Queue(maxsize=1)
+unprocessed_frame = None
+processed_frame = None
 
 fps = 0
 frame_count = 0
 start_time = time.time()
 
 def generate_frames():
-    global fps
+    global fps, processed_frame
+
     while True:
-        if not processed_frame_queue.empty():
-            data = processed_frame_queue.get()
+        if processed_frame is not None:
+            data = processed_frame
+            processed_frame = None
             frame = data["image"]
 
             # Apply the FPS text to the frame
@@ -35,10 +36,12 @@ def generate_frames():
                    b'Content-Type: image/jpeg\r\n\r\n' + buffer.tobytes() + b'\r\n')
 
 def frame_processor(raw=False):
-    global frame_count, fps, start_time
+    global frame_count, fps, start_time, unprocessed_frame, processed_frame
+
     while True:
-        if not frame_queue.empty():
-            frame_data = frame_queue.get()
+        if unprocessed_frame is not None:
+            frame_data = unprocessed_frame
+            unprocessed_frame = None
             time_received = time.time()
             frame_count += 1
 
@@ -49,19 +52,17 @@ def frame_processor(raw=False):
                 img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
 
                 if raw:
-                    if not processed_frame_queue.full():
-                        processed_frame_queue.put({"image": img, "time_received": time_received})
-                    continue
-
-                if img is not None:
-                    # Perform inference
-                    results = predict_image(img)
+                    if processed_frame is None:
+                        processed_frame = {"image": img, "time_received": time_received}
                 else:
-                    print("Failed to decode frame")
-                
-                # Store the processed frame in the queue
-                if not processed_frame_queue.full():
-                    processed_frame_queue.put({"image": results, "time_received": time_received})  
+                    if img is not None:
+                        # Perform inference
+                        results = predict_image(img)
+                    else:
+                        print("Failed to decode frame")
+                    
+                    if processed_frame is None:
+                            processed_frame = {"image": results, "time_received": time_received}
 
             except Exception as e:
                 print(f"Failed to process frame: {e}")
@@ -84,15 +85,16 @@ class DebrisxNamespace(Namespace):
         self.emit_latency_test()
 
     def on_send_frame(self, data):
+        global unprocessed_frame
+
         payload = {
             "client_sendtime" : data['client_sendtime'],
         }
 
-        try:
-            emit('frame_latency', payload, namespace='/debrisx')
-            frame_queue.put(data['frame'])
-        except Full:
-            pass
+        emit('frame_latency', payload, namespace='/debrisx')
+
+        if unprocessed_frame is None:
+            unprocessed_frame = data['frame']
 
     def emit_latency_test(self):
         # Send current time to the client and request immediate response
