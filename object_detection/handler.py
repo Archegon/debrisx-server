@@ -3,14 +3,14 @@ import logging
 from ultralytics import YOLO
 
 logging.getLogger('ultralytics').setLevel(logging.WARNING)
-model = YOLO("models/yolo/yolov8m.pt")
+model = YOLO("models/yolo/yolov8n.pt")
 
 def predict_image(image, postprocess=True, stream=False):
     img = image
     results = model.predict(img, conf=0.5, stream=stream)
 
     if not postprocess:
-        return results
+        return results, img
 
     font_scale = 0.7
     font = cv2.FONT_HERSHEY_SIMPLEX
@@ -45,7 +45,7 @@ if __name__ == "__main__":
     logging.getLogger('ultralytics').setLevel(logging.INFO)
     test_img_path = "test.jpeg"
     img = cv2.imread(test_img_path)
-    result = predict_image(img)
+    _, result = predict_image(img)
     cv2.imshow("Processed", result)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
