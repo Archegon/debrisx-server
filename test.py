@@ -35,7 +35,7 @@ def predicted_stream():
 
     stream = requests.get(RPI_IP, stream=True)
     bytes = b''
-    for chunk in stream.iter_content(chunk_size=1024):
+    for chunk in stream.iter_content(chunk_size=None):
         bytes += chunk
         a = bytes.find(b'\xff\xd8')
         b = bytes.find(b'\xff\xd9')
@@ -45,10 +45,7 @@ def predicted_stream():
             frame = cv2.imdecode(np.frombuffer(jpg, dtype=np.uint8), cv2.IMREAD_COLOR)
 
             # Predict the image
-            results, predicted_frame = predict_image(frame, postprocess=False, stream=True)
-
-            for result in results:
-                print(len(result.boxes))
+            _, predicted_frame = predict_image(frame, postprocess=True, stream=True)
 
             ret, jpeg = cv2.imencode('.jpg', predicted_frame)
             if ret:
