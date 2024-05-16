@@ -29,9 +29,10 @@ def fetch_mjpeg_stream():
 start_time = time.time()
 last_fps_time = start_time
 frame_count = 0
+last_frame_time = time.time()
 
 def predicted_stream():
-    global frame_count, start_time, last_fps_time
+    global frame_count, start_time, last_fps_time, last_frame_time
 
     stream = requests.get(RPI_IP, stream=True)
     bytes = b''
@@ -43,12 +44,26 @@ def predicted_stream():
             jpg = bytes[a:b+2]
             bytes = bytes[b+2:]
             frame = cv2.imdecode(np.frombuffer(jpg, dtype=np.uint8), cv2.IMREAD_COLOR)
+
+            # Get the current time before prediction
+            current_frame_time = time.time()
+
+            # Skip frame if the last prediction took too long
+            if current_frame_time - last_frame_time > 0.1:  # Adjust the threshold as needed
+                last_frame_time = current_frame_time
+                continue
+
+            # Predict the image
             _, predicted_frame = predict_image(frame, postprocess=True, stream=True)
+
+            # Update last frame processing time
+            last_frame_time = current_frame_time
+
             ret, jpeg = cv2.imencode('.jpg', predicted_frame)
             if ret:
                 yield (b'--frame\r\n'
                        b'Content-Type: image/jpeg\r\n\r\n' + jpeg.tobytes() + b'\r\n')
-            
+
             # Update the frame count
             frame_count += 1
 
