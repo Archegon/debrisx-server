@@ -47,6 +47,9 @@ def predicted_stream():
             # Predict the image
             results, predicted_frame = predict_image(frame, postprocess=False, stream=True)
 
+            for result in results:
+                print(len(result.boxes))
+
             ret, jpeg = cv2.imencode('.jpg', predicted_frame)
             if ret:
                 yield (b'--frame\r\n'
