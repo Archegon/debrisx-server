@@ -6,11 +6,14 @@ from ultralytics import YOLO
 logging.getLogger('ultralytics').setLevel(logging.WARNING)
 model = YOLO("models/yolo/yolov8n.pt")
 
-def predict_image(image):
+def predict_image(image, postprocess=True):
     img = image
     start_time = time.time()
 
     results = model.predict(img, conf=0.5)
+
+    if not postprocess:
+        return results
 
     elapsed_time = time.time() - start_time  # Time taken for inference
     inference_ms = round(elapsed_time * 1000)  # Convert to milliseconds
