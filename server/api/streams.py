@@ -1,4 +1,3 @@
-from fastapi import HTTPException
 from fastapi.responses import StreamingResponse
 from server.modules.streams import stream_predictor
 from .router import api_router
