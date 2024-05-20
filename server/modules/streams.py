@@ -17,24 +17,19 @@ class StreamPredictor:
         self.processing_task = None
         self.frame_queue = asyncio.Queue()
         self.predicted_frame_queue = asyncio.Queue()
-        self.clients_connected = 0
 
     def start_streaming(self):
         if self.streaming_task is None or self.streaming_task.done():
-            self.clients_connected += 1
             self.stop_stream = False
             self.streaming_task = asyncio.create_task(self.run_read_stream())
             self.processing_task = asyncio.create_task(self.process_frames())
 
     def stop_streaming(self):
-        self.clients_connected -= 1
-
-        if self.clients_connected == 0:
-            self.stop_stream = True
-            if self.streaming_task:
-                self.streaming_task.cancel()
-            if self.processing_task:
-                self.processing_task.cancel()
+        self.stop_stream = True
+        if self.streaming_task:
+            self.streaming_task.cancel()
+        if self.processing_task:
+            self.processing_task.cancel()
 
     async def run_read_stream(self):
         async for _ in self.read_stream():
