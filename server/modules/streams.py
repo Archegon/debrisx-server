@@ -15,6 +15,7 @@ class StreamPredictor:
         self.stop_stream = False
         self.streaming_task = None
         self.processing_task = None
+        self.current_fps = 0
         self.frame_queue = asyncio.Queue(maxsize=1)
         self.predicted_frame_queue = asyncio.Queue(maxsize=1)
 
@@ -32,7 +33,7 @@ class StreamPredictor:
             self.processing_task.cancel()
 
     async def run_read_stream(self):
-        await self.read_stream()  # Properly await the coroutine
+        await self.read_stream()
 
     async def read_stream(self):
         try:
@@ -83,6 +84,7 @@ class StreamPredictor:
         elapsed_time = current_time - self.last_fps_time
         if elapsed_time >= 1.0:
             fps = self.frame_count / elapsed_time
+            self.current_fps = fps
             print(f"FPS: {fps:.2f}")
             self.frame_count = 0
             self.last_fps_time = current_time
