@@ -5,7 +5,8 @@ from ultralytics import YOLO
 logging.getLogger('ultralytics').setLevel(logging.WARNING)
 LAPTOP_MODEL_PATH = "models/yolo/yolov8n.onnx"
 DESKTOP_MODEL_PATH = "models/yolo/yolov8n.pt"
-model = YOLO(DESKTOP_MODEL_PATH, task="detect")
+
+model = YOLO(LAPTOP_MODEL_PATH, task="detect")
 
 def predict_image(image, postprocess=True, stream=False):
     img = image

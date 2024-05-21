@@ -15,8 +15,8 @@ class StreamPredictor:
         self.stop_stream = False
         self.streaming_task = None
         self.processing_task = None
-        self.frame_queue = asyncio.Queue()
-        self.predicted_frame_queue = asyncio.Queue()
+        self.frame_queue = asyncio.Queue(maxsize=1)
+        self.predicted_frame_queue = asyncio.Queue(maxsize=1)
 
     def start_streaming(self):
         if self.streaming_task is None or self.streaming_task.done():
@@ -32,9 +32,7 @@ class StreamPredictor:
             self.processing_task.cancel()
 
     async def run_read_stream(self):
-        async for _ in self.read_stream():
-            if self.stop_stream:
-                break
+        await self.read_stream()  # Properly await the coroutine
 
     async def read_stream(self):
         try:
@@ -54,9 +52,14 @@ class StreamPredictor:
                             jpg = bytes[a:b+2]
                             bytes = bytes[b+2:]
                             frame = cv2.imdecode(np.frombuffer(jpg, dtype=np.uint8), cv2.IMREAD_COLOR)
+
                             if frame is not None:
-                                await self.frame_queue.put(frame)
-                            yield frame
+                                if self.frame_queue.qsize() > 0:
+                                    await asyncio.sleep(0.001)
+                                    continue
+                                else:
+                                    await self.frame_queue.put(frame)
+                            
         except aiohttp.ClientError as e:
             print(f"Error: {e}")
 
@@ -86,6 +89,10 @@ class StreamPredictor:
 
     async def predicted_stream(self):
         while not self.stop_stream:
+            if self.predicted_frame_queue.qsize() > 0:
+                await asyncio.sleep(0.001)
+                continue
+
             jpeg = await self.predicted_frame_queue.get()
             yield (b'--frame\r\n'
                    b'Content-Type: image/jpeg\r\n\r\n' + jpeg + b'\r\n')
@@ -95,4 +102,4 @@ RPI_IP = os.getenv('RPI_IP')
 if not RPI_IP:
     raise EnvironmentError("RPI_IP environment variable not set")
 
-stream_predictor = StreamPredictor(RPI_IP)
+stream_predictor = StreamPredictor("http://192.168.237.132:8000")
