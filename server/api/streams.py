@@ -24,3 +24,16 @@ async def stop_video_predicted_feed():
     """
     stream_predictor.stop_streaming()
     return {"message": "Streaming stopped"}
+
+@api_router.get("/predicted_feed/status")
+async def get_video_predicted_feed_status():
+    """
+    Returns the status of the video feed prediction.
+    """
+    return {
+        "status": {
+            "streaming": not stream_predictor.stop_stream,
+            "processing": stream_predictor.processing_task is not None
+            },
+        "fps": stream_predictor.current_fps,
+        }
