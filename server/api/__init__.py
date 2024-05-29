@@ -1,2 +1,2 @@
 from .router import api_router
-from . import streams
+from . import streams, training

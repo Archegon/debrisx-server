@@ -32,7 +32,7 @@ class StreamPredictor:
             self.processing_task.cancel()
 
     async def run_read_stream(self):
-        await self.read_stream()  # Properly await the coroutine
+        await self.read_stream()
 
     async def read_stream(self):
         try:
@@ -102,4 +102,6 @@ RPI_IP = os.getenv('RPI_IP')
 if not RPI_IP:
     raise EnvironmentError("RPI_IP environment variable not set")
 
-stream_predictor = StreamPredictor("http://192.168.237.132:8000")
+TEMP_IP = "http://192.168.237.132:8000"
+
+stream_predictor = StreamPredictor(TEMP_IP)

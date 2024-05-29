@@ -1,0 +1,26 @@
+{
+    "client": {
+        "client_id": "1234567890",
+        "status": "connected",
+        "last_connection": "2020-12-12 12:12:12"
+    },
+    "battery": {
+        "level": 100,
+        "status": "charging"
+    },
+    "thrusters": {
+        "thruster_one": {
+            "status": "off",
+            "speed": 0
+        },
+        "thruster_two": {
+            "status": "off",
+            "speed": 0
+        }
+    },
+    "water_monitor": {
+        "ph": 7.0,
+        "tds": 0.4,
+        "turidity": 0.5
+    }
+}
