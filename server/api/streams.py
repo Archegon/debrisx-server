@@ -2,14 +2,14 @@ from fastapi.responses import StreamingResponse
 from server.modules.streams import stream_predictor
 from .router import api_router
 
-@api_router.get("/predicted_feed")
+@api_router.get("/predicted_feed", tags=["Video Operations"])
 async def video_predicted_feed():
     """
     Returns the predicted video feed as a streaming response.
     """
     return StreamingResponse(stream_predictor.predicted_stream(), media_type='multipart/x-mixed-replace; boundary=frame')
 
-@api_router.get("/predicted_feed/start")
+@api_router.get("/predicted_feed/start", tags=["Video Operations"])
 async def start_video_predicted_feed():
     """
     Starts the video feed prediction.
@@ -17,7 +17,7 @@ async def start_video_predicted_feed():
     stream_predictor.start_streaming()
     return {"message": "Streaming started"}
 
-@api_router.get("/predicted_feed/stop")
+@api_router.get("/predicted_feed/stop", tags=["Video Operations"])
 async def stop_video_predicted_feed():
     """
     Stops the video feed prediction.
@@ -25,7 +25,7 @@ async def stop_video_predicted_feed():
     stream_predictor.stop_streaming()
     return {"message": "Streaming stopped"}
 
-@api_router.get("/predicted_feed/status")
+@api_router.get("/predicted_feed/status", tags=["Video Operations"])
 async def get_video_predicted_feed_status():
     """
     Returns the status of the video feed prediction.

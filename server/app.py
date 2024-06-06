@@ -26,4 +26,5 @@ app.include_router(api_router, prefix="/api")
 uploads_dir = os.path.abspath("./uploads")
 print(f"Static files directory: {uploads_dir}")
 
-app.mount("/static", StaticFiles(directory="./uploads"), name="static")
+uploads_dir = os.path.abspath("./uploads")
+app.mount("/static", StaticFiles(directory=uploads_dir), name="static")

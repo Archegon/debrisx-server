@@ -13,7 +13,7 @@ def get_db():
     finally:
         db.close()
 
-@api_router.post("/upload")
+@api_router.post("/upload", tags=["Image Operations"])
 async def upload_file(image: UploadFile = File(...), type: str = Form(...), db: Session = Depends(get_db)):
     if type not in ["train", "validate", "test"]:
         raise HTTPException(status_code=400, detail="Invalid type")
@@ -39,7 +39,7 @@ async def upload_file(image: UploadFile = File(...), type: str = Form(...), db: 
 
     return {"message": "Image uploaded successfully", "file_name": new_file_name}
 
-@api_router.delete("/delete/{image_id}")
+@api_router.delete("/delete/{image_id}", tags=["Image Operations"])
 async def delete_image(image_id: int, db: Session = Depends(get_db)):
     db_image = db.query(ImageData).filter(ImageData.id == image_id).first()
     if db_image is None:
@@ -60,11 +60,11 @@ async def delete_image(image_id: int, db: Session = Depends(get_db)):
 
     return {"message": "Image deleted successfully"}
 
-@api_router.get("/image/{image_id}")
+@api_router.get("/image/{image_id}", tags=["Image Operations"])
 async def get_image_url(image_id: int, request: Request, db: Session = Depends(get_db)):
     db_image = db.query(ImageData).filter(ImageData.id == image_id).first()
     if db_image is None:
         raise HTTPException(status_code=404, detail="Image not found")
 
-    file_url = request.url_for('static', path=f"uploads/{db_image.type}/{db_image.filename}")
+    file_url = request.url_for('static', path=f"{db_image.type}/{db_image.filename}")
     return {"image_url": file_url}
