@@ -38,7 +38,7 @@ class StreamPredictor:
     async def read_stream(self):
         try:
             async with aiohttp.ClientSession() as session:
-                async with session.get(self.rpi_ip + "/stream.mjpg") as response:
+                async with session.get(self.rpi_ip + "/api/stream.mjpg") as response:
                     if response.status != 200:
                         print(f"Error: {response.status}")
                         return
@@ -106,4 +106,4 @@ if not RPI_IP:
 
 TEMP_IP = "http://192.168.237.132:8000"
 
-stream_predictor = StreamPredictor(TEMP_IP)
+stream_predictor = StreamPredictor(RPI_IP)
