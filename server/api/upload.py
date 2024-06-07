@@ -1,4 +1,5 @@
 import os
+import datetime
 from fastapi import UploadFile, File, Form, HTTPException, Depends, Request
 from sqlalchemy.orm import Session
 from database import SessionLocal
@@ -22,9 +23,9 @@ async def upload_file(image: UploadFile = File(...), type: str = Form(...), db: 
     directory = f"uploads/{type}"
     os.makedirs(directory, exist_ok=True)
 
-    # Calculate new file name
-    files = db.query(ImageData).filter(ImageData.type == type).all()
-    new_file_name = f"{len(files) + 1}.jpg"
+    # Calculate new file name using current timestamp
+    timestamp = datetime.datetime.now().strftime("%d%m%Y-%H.%M.%S")
+    new_file_name = f"{timestamp}.jpg"
     file_path = os.path.join(directory, new_file_name)
 
     # Save file to directory
