@@ -66,7 +66,6 @@ class StreamPredictor:
                                     await asyncio.sleep(0.001)
                                     continue
                                 else:
-                                    # self.calculate_fps("Raw FPS")
                                     await self.frame_queue.put(frame)
                             
         except aiohttp.ClientError as e:
@@ -103,7 +102,7 @@ class StreamPredictor:
                 frame = await self.frame_queue.get()
                 _, jpeg = cv2.imencode('.jpg', frame)
                 if jpeg is not None:
-                    # self.calculate_fps()
+                    self.calculate_fps("Raw FPS")
                     yield (b'--frame\r\n'
                            b'Content-Type: image/jpeg\r\n\r\n' + jpeg.tobytes() + b'\r\n')
             except GeneratorExit:
