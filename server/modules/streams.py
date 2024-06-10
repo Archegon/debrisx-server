@@ -16,17 +16,24 @@ class StreamPredictor:
         self.streaming_task = None
         self.processing_task = None
         self.current_fps = 0
+        self.raw_stream_feed = False
         self.frame_queue = asyncio.Queue(maxsize=1)
         self.predicted_frame_queue = asyncio.Queue(maxsize=1)
 
-    def start_streaming(self):
+    def start_streaming(self, raw_stream=False):
+        self.raw_stream_feed = raw_stream
+
         if self.streaming_task is None or self.streaming_task.done():
             self.stop_stream = False
+
             self.streaming_task = asyncio.create_task(self.run_read_stream())
-            self.processing_task = asyncio.create_task(self.process_frames())
+            
+            if not self.raw_stream_feed:
+                self.processing_task = asyncio.create_task(self.process_frames())
 
     def stop_streaming(self):
         self.stop_stream = True
+        print("Stopping Stream...")
         if self.streaming_task:
             self.streaming_task.cancel()
         if self.processing_task:
@@ -59,6 +66,7 @@ class StreamPredictor:
                                     await asyncio.sleep(0.001)
                                     continue
                                 else:
+                                    # self.calculate_fps("Raw FPS")
                                     await self.frame_queue.put(frame)
                             
         except aiohttp.ClientError as e:
@@ -76,34 +84,50 @@ class StreamPredictor:
             jpeg = await asyncio.to_thread(self.predict_and_encode, frame)
             if jpeg:
                 await self.predicted_frame_queue.put(jpeg)
-                self.calculate_fps()
+                self.calculate_fps("Predicted FPS")
 
-    def calculate_fps(self):
+    def calculate_fps(self, prefix_str="FPS"):
         self.frame_count += 1
         current_time = time.time()
         elapsed_time = current_time - self.last_fps_time
         if elapsed_time >= 1.0:
             fps = self.frame_count / elapsed_time
             self.current_fps = fps
-            print(f"FPS: {fps:.2f}")
+            print(f"{prefix_str}: {fps:.2f}")
             self.frame_count = 0
             self.last_fps_time = current_time
 
+    async def raw_stream(self):
+        while not self.stop_stream:
+            try:
+                frame = await self.frame_queue.get()
+                _, jpeg = cv2.imencode('.jpg', frame)
+                if jpeg is not None:
+                    # self.calculate_fps()
+                    yield (b'--frame\r\n'
+                           b'Content-Type: image/jpeg\r\n\r\n' + jpeg.tobytes() + b'\r\n')
+            except GeneratorExit:
+                print("Raw Stream Generator Exit")
+                self.stop_streaming()
+
     async def predicted_stream(self):
         while not self.stop_stream:
-            if self.predicted_frame_queue.qsize() > 0:
-                await asyncio.sleep(0.001)
-                continue
+            try:
+                if self.predicted_frame_queue.qsize() > 0:
+                    await asyncio.sleep(0.001)
+                    continue
 
-            jpeg = await self.predicted_frame_queue.get()
-            yield (b'--frame\r\n'
-                   b'Content-Type: image/jpeg\r\n\r\n' + jpeg + b'\r\n')
+                jpeg = await self.predicted_frame_queue.get()
+                yield (b'--frame\r\n'
+                    b'Content-Type: image/jpeg\r\n\r\n' + jpeg + b'\r\n')
+            except GeneratorExit:
+                print("Stream GeneratorExit")
+                self.stop_streaming()
 
 RPI_IP = os.getenv('RPI_IP')
+print(f"RPI_IP env: {RPI_IP}")
 
 if not RPI_IP:
     raise EnvironmentError("RPI_IP environment variable not set")
-
-TEMP_IP = "http://192.168.237.132:8000"
 
 stream_predictor = StreamPredictor(RPI_IP)
