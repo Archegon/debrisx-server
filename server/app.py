@@ -1,8 +1,9 @@
 import os
-from fastapi import FastAPI
+from fastapi import FastAPI, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from .api import api_router
+from .websockets.connection import websocket_endpoint
 from database import Base, engine
 
 app = FastAPI()
@@ -21,8 +22,10 @@ app.add_middleware(
 
 app.include_router(api_router, prefix="/api")
 
-# Print the absolute path for debugging
-uploads_dir = os.path.abspath("./uploads")
+@app.websocket("/ws")
+async def websocket_route(websocket: WebSocket):
+    await websocket_endpoint(websocket)
 
+# Print the absolute path for debugging
 uploads_dir = os.path.abspath("./uploads")
 app.mount("/static", StaticFiles(directory=uploads_dir), name="static")
