@@ -23,7 +23,7 @@ async def websocket_endpoint(websocket: WebSocket):
             data = await websocket.receive_text()
             print(f"Received message from {client_ip} ({client_type}): {data}")
             target_client_type = "frontend" if client_type == "raspberry" else "raspberry"
-            await broadcast_message(f"Message text was: {data}", target_client_type)
+            await broadcast_message(f"{data}", target_client_type)
     except WebSocketDisconnect:
         print(f"Connection closed from {client_ip} ({client_type})")
     finally:
